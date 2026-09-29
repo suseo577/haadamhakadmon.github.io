@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>האדם הקדמון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;900&family=Heebo:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dcd9cf; --panel:#e9e6dd; --ink:#23201c; --muted:#5d5a52; --accent:#b9791a; --on-accent:#1d1a15; --line:#b9b5a8; --err:#a3331f;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#1c1e1b; --panel:#252823; --ink:#e6e2d5; --muted:#a09c90; --accent:#e0a13a; --on-accent:#1c1a14; --line:#3d4039; --err:#f08a72;}
+}
+:root[data-theme="dark"]{--bg:#1c1e1b; --panel:#252823; --ink:#e6e2d5; --muted:#a09c90; --accent:#e0a13a; --on-accent:#1c1a14; --line:#3d4039; --err:#f08a72;}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:'Heebo',system-ui,sans-serif; font-size:18px; line-height:1.7}
+h1,h2{font-family:'Frank Ruhl Libre',Georgia,'Times New Roman',serif; margin:0}
+[hidden]{display:none !important}
+
+.gate{min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 20px; text-align:center}
+.gate h1{font-size:clamp(3.4rem,15vw,7rem); font-weight:900; line-height:1; letter-spacing:-.01em}
+.stroke{display:block; width:min(240px,60%); height:10px; margin:14px auto 22px; background:var(--accent); border-radius:60% 40% 55% 45% / 70% 60% 40% 30%; transform:rotate(-1.5deg)}
+.gate p{margin:0 0 28px; color:var(--muted); max-width:30ch}
+.entry{display:flex; gap:10px; width:min(420px,100%)}
+.entry input{flex:1; min-width:0; font:inherit; font-size:1.25rem; letter-spacing:.25em; text-align:center; direction:ltr; padding:12px 14px; color:var(--ink); background:var(--panel); border:2px solid var(--line); border-radius:6px}
+.entry input:focus-visible,.entry button:focus-visible,.exit:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.entry button,.exit{font:inherit; font-weight:500; cursor:pointer; border-radius:6px}
+.entry button{padding:12px 22px; background:var(--accent); color:var(--on-accent); border:2px solid var(--accent)}
+.msg{min-height:1.7em; margin-top:14px; color:var(--err); font-weight:500}
+.entry.bad input{border-color:var(--err); animation:nudge .3s}
+@keyframes nudge{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){.entry.bad input{animation:none}}
+
+.reader{max-width:44rem; margin:0 auto; padding:20px 22px 72px}
+.bar{display:flex; align-items:center; justify-content:space-between; padding-bottom:14px; border-bottom:2px solid var(--line); margin-bottom:40px}
+.bar strong{font-family:'Frank Ruhl Libre',Georgia,serif; font-size:1.3rem; font-weight:900}
+.exit{padding:6px 16px; background:transparent; color:var(--ink); border:2px solid var(--line)}
+.chapter{margin-bottom:56px}
+.chapter h2{font-size:clamp(1.9rem,6vw,2.6rem); font-weight:900; line-height:1.2; margin-bottom:22px}
+.chapter p{font-family:'Frank Ruhl Libre',Georgia,'Times New Roman',serif; font-size:1.2rem; line-height:1.95; margin:0 0 1.1em}
+</style>
+</head>
+<body>
+
+<main class="gate" id="gate">
+  <h1>האדם הקדמון</h1>
+  <span class="stroke" aria-hidden="true"></span>
+  <p>יש לך קוד מאחורי הספר? כתוב אותו כאן.</p>
+  <div class="entry" id="entry">
+    <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="הקוד שלך" aria-label="קוד כניסה">
+    <button id="go" type="button">קרא את הספר</button>
+  </div>
+  <div class="msg" id="msg" role="alert"></div>
+</main>
+
+<div class="reader" id="reader" hidden>
+  <div class="bar">
+    <strong>האדם הקדמון</strong>
+    <button class="exit" id="exit" type="button">יציאה</button>
+  </div>
+  <article id="book"></article>
+</div>
+
+<script>
+  // ====== כאן מעדכנים ======
+  var CODE = "123456789";
+
+  // כשהספר מוכן: מחליפים את הפרק הזה בפרקי הספר (כותרת + פסקאות)
+  var CHAPTERS = [
+    {
+      title: "הספר יעלה בקרוב",
+      paragraphs: [
+        "הספר \"האדם הקדמון\" עדיין בהכנה, והפרקים יופיעו כאן בקרוב.",
+        "תודה על הסבלנות. אפשר לחזור לכאן בקרוב כדי להתחיל לקרוא."
+      ]
+    }
+  ];
+  // =========================
+
+  var gate = document.getElementById("gate"), reader = document.getElementById("reader"),
+      input = document.getElementById("code"), msg = document.getElementById("msg"),
+      entry = document.getElementById("entry"), book = document.getElementById("book");
+
+  function renderBook(){
+    book.textContent = "";
+    CHAPTERS.forEach(function(ch){
+      var sec = document.createElement("section"); sec.className = "chapter";
+      var h = document.createElement("h2"); h.textContent = ch.title; sec.appendChild(h);
+      ch.paragraphs.forEach(function(t){ var p = document.createElement("p"); p.textContent = t; sec.appendChild(p); });
+      book.appendChild(sec);
+    });
+  }
+  function show(readerOn){
+    gate.hidden = readerOn; reader.hidden = !readerOn;
+    window.scrollTo(0,0);
+    if(readerOn){ renderBook(); } else { input.value = ""; input.focus(); }
+  }
+  function check(){
+    if(input.value.trim() === CODE){ msg.textContent = ""; entry.classList.remove("bad"); show(true); }
+    else{
+      msg.textContent = "הקוד לא נכון. בדוק שהקלדת אותו במדויק ונסה שוב.";
+      entry.classList.remove("bad"); void entry.offsetWidth; entry.classList.add("bad");
+    }
+  }
+  document.getElementById("go").addEventListener("click", check);
+  input.addEventListener("keydown", function(e){ if(e.key === "Enter") check(); });
+  document.getElementById("exit").addEventListener("click", function(){ show(false); });
+</script>
+</body>
+</html>
